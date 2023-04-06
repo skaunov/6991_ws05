@@ -1,16 +1,16 @@
 use simulator_lib::directions::{coordinate::Coordinate, direction::Direction};
-use simulator_lib::{start_server, Asteroid, ObjectType, Planet};
+use simulator_lib::{start_server, Asteroid, Object, Planet};
 fn main() {
-    let mut objects = vec![
-        ObjectType::Planet(Planet {
+    let mut objects: Vec<Box<dyn Object>> = vec![
+        Box::new(Planet {
             coordinate: Coordinate::new(500, 500),
             weight: 50,
         }),
-        ObjectType::Asteroid(Asteroid {
+        Box::new(Asteroid {
             coordinate: Coordinate::new(250, 250),
             velocity: Direction { x: 30, y: -40 },
         }),
-        ObjectType::Asteroid(Asteroid {
+        Box::new(Asteroid {
             coordinate: Coordinate::new(750, 750),
             velocity: Direction { x: -30, y: 40 },
         }),

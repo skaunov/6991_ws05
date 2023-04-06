@@ -49,6 +49,18 @@ impl Planet {
         }
     }
 }
+impl Object for Planet {
+    fn is_gravity_source(&self) -> bool {true}
+    fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
+    fn weight(&self) -> i32 {self.weight}
+    fn velocity(&mut self) -> &mut Direction {
+        // TODO any graceful refactor?
+        /*      check the code -- maybe it's feasible to return
+                zero, but then it should be well-documented */
+        panic!("`Planet` have no `velocity`")
+    }
+    fn get_coordinate(&self) -> Coordinate {self.coordinate}
+}
 
 #[derive(Clone)]
 pub struct Asteroid {
@@ -76,33 +88,38 @@ impl Asteroid {
         }
     }
 }
-
-#[derive(Clone)]
-pub enum ObjectType {
-    Planet(Planet),
-    Asteroid(Asteroid),
+impl Object for Asteroid {
+    fn is_gravity_source(&self) -> bool {false}
+    fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
+    fn weight(&self) -> i32 {
+        // TODO any graceful refactor?
+        /*      check the code -- maybe it's feasible to return
+                zero, but then it should be well-documented */
+        panic!("should never be called on gravity non-source")
+    }
+    fn velocity(&mut self) -> &mut Direction {&mut self.velocity}
+    fn get_coordinate(&self) -> Coordinate {self.coordinate}
 }
 
-impl ObjectType {
-    fn get_circle(&self) -> Circle {
-        match self {
-            ObjectType::Planet(p) => p.as_circle(),
-            ObjectType::Asteroid(a) => a.as_circle(),
-        }
-    }
+pub trait Object {
+    fn is_gravity_source(&self) -> bool;
+    fn coordinate(&mut self) -> &mut Coordinate;
+    fn get_coordinate(&self) -> Coordinate;
+    fn weight(&self) -> i32;
+    fn velocity(&mut self) -> &mut Direction;
 }
 
 fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
     (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f64).sqrt() as i32
 }
 
-fn apply_physics(mut objects: Vec<ObjectType>, gravitational_constant: i32) -> Vec<ObjectType> {
+fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32) -> Vec<Box<dyn Object>> {
     // Go through each pair of objects, and apply
     let gravity_sources = objects
         .iter()
         .filter_map(|o| {
-            return if let ObjectType::Planet(p) = o {
-                Some((p.coordinate.clone(), p.weight))
+            return if o.is_gravity_source() {
+                Some((o.get_coordinate().clone(), o.weight()))
             } else {
                 None
             };
@@ -110,55 +127,69 @@ fn apply_physics(mut objects: Vec<ObjectType>, gravitational_constant: i32) -> V
         .collect::<Vec<_>>();
 
     objects.iter_mut().for_each(|o| {
-        if let ObjectType::Asteroid(asteroid) = o {
+        if !o.is_gravity_source() {
+            let asteroid = o;
             gravity_sources
                 .iter()
                 .for_each(|(planet_coord, planet_weight)| {
                     let distance = get_distance(
                         planet_coord.x,
                         planet_coord.y,
-                        asteroid.coordinate.x,
-                        asteroid.coordinate.y,
+                        asteroid.coordinate().x,
+                        asteroid.coordinate().y,
                     );
                     let distance = distance * distance;
 
                     let force = Direction {
-                        x: (asteroid.coordinate.x - planet_coord.x)
+                        x: (asteroid.coordinate().x - planet_coord.x)
                             * planet_weight
                             * gravitational_constant
                             / distance,
-                        y: (asteroid.coordinate.y - planet_coord.y)
+                        y: (asteroid.coordinate().y - planet_coord.y)
                             * planet_weight
                             * gravitational_constant
                             / distance,
                     };
-                    asteroid.velocity.x -= force.x;
-                    asteroid.velocity.y -= force.y;
+                    asteroid.velocity().x -= force.x;
+                    asteroid.velocity().y -= force.y;
 
-                    let vel = asteroid.velocity.clone();
+                    let vel = asteroid.velocity().clone();
                 })
         }
     });
 
     // Apply the new velocity to each object.
     objects.iter_mut().for_each(|object| {
-        if let ObjectType::Asteroid(asteroid) = object {
-            asteroid.coordinate.x += asteroid.velocity.x;
-            asteroid.coordinate.y += asteroid.velocity.y;
+        if !object.is_gravity_source() {
+            object.coordinate().x += object.velocity().x;
+            object.coordinate().y += object.velocity().y;
         }
     });
 
     objects
+    // objects.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
 }
 
 fn handle_connection(
     mut stream: TcpStream,
-    mut objects: Vec<ObjectType>,
+    mut objects: Vec<Box<dyn Object>>,
     gravitational_constant: i32,
-) -> Vec<ObjectType> {
+) -> Vec<Box<dyn Object>> {
     objects = apply_physics(objects, gravitational_constant);
 
-    let circles = objects.iter().map(|o| o.get_circle()).collect::<Vec<_>>();
+    let get_circle = |o: &Box<dyn Object>| -> Circle {
+        match o.is_gravity_source() {
+            true => Circle { 
+                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.weight(), stroke: "green".to_string(), 
+                fill: "black".to_string(), stroke_width: 3
+            },
+            false => Circle { 
+                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: 2, stroke: "green".to_string(), 
+                fill: "black".to_string(), stroke_width: 3
+            },
+        }
+    };
+    let circles = objects.iter().map(|o| get_circle(o)).collect::<Vec<_>>();
     let contents = serde_json::to_string(&circles).unwrap();
     let status_line = "HTTP/1.1 200 OK";
     let response = format!(
@@ -168,10 +199,10 @@ fn handle_connection(
     stream.flush().unwrap();
     stream.shutdown(std::net::Shutdown::Both).unwrap();
 
-    objects
+    objects//.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
 }
 
-pub fn start_server(uri: &str, mut objects: Vec<ObjectType>, gravitational_constant: i32) -> ! {
+pub fn start_server(uri: &str, mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32) -> ! {
     let listener = TcpListener::bind(uri).unwrap();
 
     for stream in listener.incoming() {

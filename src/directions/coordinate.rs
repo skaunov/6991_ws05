@@ -4,7 +4,7 @@ use std::default::Default;
 use std::ops::Add;
 
 /// Represent a 2D coordinate.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Coordinate {
     pub x: i32,
     pub y: i32,
