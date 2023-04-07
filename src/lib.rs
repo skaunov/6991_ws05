@@ -12,17 +12,6 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
-struct Circle {
-    cx: i32,
-    cy: i32,
-    r: i32,
-    stroke: String,
-    fill: String,
-    #[serde(rename = "stroke-width")]
-    stroke_width: i32,
-}
-
 #[derive(Clone)]
 pub struct Planet {
     pub coordinate: Coordinate,
@@ -36,17 +25,6 @@ impl Planet {
 
     fn get_weight(&self) -> i32 {
         self.weight
-    }
-
-    fn as_circle(&self) -> Circle {
-        Circle {
-            cx: self.coordinate.x,
-            cy: self.coordinate.y,
-            r: self.weight,
-            stroke: "green".to_string(),
-            fill: "black".to_string(),
-            stroke_width: 3,
-        }
     }
 }
 impl Object for Planet {
@@ -75,17 +53,6 @@ impl Asteroid {
 
     fn get_velocity(&self) -> Direction {
         self.velocity.clone()
-    }
-
-    fn as_circle(&self) -> Circle {
-        Circle {
-            cx: self.coordinate.x,
-            cy: self.coordinate.y,
-            r: 2,
-            stroke: "green".to_string(),
-            fill: "black".to_string(),
-            stroke_width: 3,
-        }
     }
 }
 impl Object for Asteroid {
@@ -176,6 +143,17 @@ fn handle_connection(
     gravitational_constant: i32,
 ) -> Vec<Box<dyn Object>> {
     objects = apply_physics(objects, gravitational_constant);
+
+    #[derive(Deserialize, Serialize)]
+    struct Circle {
+        cx: i32,
+        cy: i32,
+        r: i32,
+        stroke: String,
+        fill: String,
+        #[serde(rename = "stroke-width")]
+        stroke_width: i32,
+    }
 
     let get_circle = |o: &Box<dyn Object>| -> Circle {
         match o.is_gravity_source() {
