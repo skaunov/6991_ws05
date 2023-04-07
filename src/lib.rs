@@ -51,6 +51,7 @@ impl Planet {
 }
 impl Object for Planet {
     fn is_gravity_source(&self) -> bool {true}
+    fn is_gravity_receiver(&self) -> bool {false}    
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
     fn weight(&self) -> i32 {self.weight}
     fn velocity(&mut self) -> &mut Direction {
@@ -90,6 +91,7 @@ impl Asteroid {
 }
 impl Object for Asteroid {
     fn is_gravity_source(&self) -> bool {false}
+    fn is_gravity_receiver(&self) -> bool {true}
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
     fn weight(&self) -> i32 {
         // TODO any graceful refactor?
@@ -103,6 +105,7 @@ impl Object for Asteroid {
 
 pub trait Object {
     fn is_gravity_source(&self) -> bool;
+    fn is_gravity_receiver(&self) -> bool;
     fn coordinate(&mut self) -> &mut Coordinate;
     fn get_coordinate(&self) -> Coordinate;
     fn weight(&self) -> i32;
@@ -127,7 +130,7 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
         .collect::<Vec<_>>();
 
     objects.iter_mut().for_each(|o| {
-        if !o.is_gravity_source() {
+        if o.is_gravity_receiver() {
             let asteroid = o;
             gravity_sources
                 .iter()
@@ -160,7 +163,7 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
 
     // Apply the new velocity to each object.
     objects.iter_mut().for_each(|object| {
-        if !object.is_gravity_source() {
+        if object.is_gravity_receiver() {
             object.coordinate().x += object.velocity().x;
             object.coordinate().y += object.velocity().y;
         }
@@ -178,15 +181,17 @@ fn handle_connection(
     objects = apply_physics(objects, gravitational_constant);
 
     let get_circle = |o: &Box<dyn Object>| -> Circle {
-        match o.is_gravity_source() {
-            true => Circle { 
+        match (o.is_gravity_source(), o.is_gravity_receiver()) {
+            (true, false) => Circle { 
                 cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.weight(), stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
-            false => Circle { 
+            (false, true) => Circle { 
                 cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: 2, stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
+            (true, true) => todo!(),
+            (false, false) => todo!(),
         }
     };
     let circles = objects.iter().map(|o| get_circle(o)).collect::<Vec<_>>();
