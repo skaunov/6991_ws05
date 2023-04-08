@@ -7,7 +7,7 @@ use std::{
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
     thread,
-    time::Duration,
+    time::Duration, rc::Rc, cell::RefCell,
 };
 
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,12 @@ impl Object for Planet {
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
     fn weight(&self) -> Option<i32> {Some(self.weight)}
     fn velocity(&mut self) -> Option<&mut Direction> {None}
+    fn get_velocity(&self) -> &Direction {
+        // TODO any graceful refactor?
+        /*      check the code -- maybe it's feasible to return
+                zero, but then it should be well-documented */
+        panic!("`Planet` have no `velocity`")
+    }
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
 }
 
@@ -60,6 +66,8 @@ impl Object for Asteroid {
     fn weight(&self) -> Option<i32> {None}
     fn velocity(&mut self) -> Option<&mut Direction> {Some(&mut self.velocity)}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
+
+    fn get_velocity(&self) -> &Direction {todo!()}
 }
 
 pub trait Object {
@@ -69,27 +77,29 @@ pub trait Object {
     fn get_coordinate(&self) -> Coordinate;
     fn weight(&self) -> Option<i32>;
     fn velocity(&mut self) -> Option<&mut Direction>;
+    fn get_velocity(&self) -> &Direction;
 }
 
 fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
     (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f64).sqrt() as i32
 }
 
-fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32) -> Vec<Box<dyn Object>> {
+fn apply_physics(mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32) -> Vec<Rc<RefCell<dyn Object>>> {
     // Go through each pair of objects, and apply
     let gravity_sources = objects
         .iter()
         .filter_map(|o| {
-            return if o.is_gravity_source() {
-                Some((o.get_coordinate().clone(), o.weight().expect(BREAKING_VALUE_KIND)))
+            return if o.borrow().is_gravity_source() {
+                Some((o.borrow().get_coordinate().clone(), o.borrow().weight().expect(BREAKING_VALUE_KIND)))
             } else {
                 None
             };
         })
         .collect::<Vec<_>>();
 
-    objects.iter_mut().for_each(|o| {
-        if o.is_gravity_receiver() {
+    objects.iter_mut().for_each(|o/* : &mut Rc<RefCell<dyn Object>> */| {
+        if o.borrow().is_gravity_receiver() {
+            // ~~TODO understand why this assignment "breaking everyhting." I.e. mess `borrow()`.~~
             let asteroid = o;
             gravity_sources
                 .iter()
@@ -97,34 +107,38 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
                     let distance = get_distance(
                         planet_coord.x,
                         planet_coord.y,
-                        asteroid.coordinate().x,
-                        asteroid.coordinate().y,
+                        /* TODO understand if it's possible to go here without mutability (which isn't used anyway) */
+                        asteroid.borrow().get_coordinate().x,
+                        asteroid.borrow().get_coordinate().y,
                     );
                     let distance = distance * distance;
 
                     let force = Direction {
-                        x: (asteroid.coordinate().x - planet_coord.x)
+                        x: (asteroid.borrow().get_coordinate().x - planet_coord.x)
                             * planet_weight
                             * gravitational_constant
                             / distance,
-                        y: (asteroid.coordinate().y - planet_coord.y)
+                        y: (asteroid.borrow().get_coordinate().y - planet_coord.y)
                             * planet_weight
                             * gravitational_constant
                             / distance,
                     };
-                    asteroid.velocity().expect(BREAKING_VALUE_KIND).x -= force.x;
-                    asteroid.velocity().expect(BREAKING_VALUE_KIND).y -= force.y;
+                    asteroid.borrow_mut().velocity().expect(BREAKING_VALUE_KIND).x -= force.x;
+                    asteroid.borrow_mut().velocity().expect(BREAKING_VALUE_KIND).y -= force.y;
 
-                    let vel = asteroid.velocity().expect(BREAKING_VALUE_KIND).clone();
+                    let vel = asteroid.borrow().get_velocity().expect(BREAKING_VALUE_KIND).clone();
                 })
         }
     });
 
     // Apply the new velocity to each object.
     objects.iter_mut().for_each(|object| {
-        if object.is_gravity_receiver() {
-            object.coordinate().x += object.velocity().expect(BREAKING_VALUE_KIND).x;
-            object.coordinate().y += object.velocity().expect(BREAKING_VALUE_KIND).y;
+        if object.borrow().is_gravity_receiver() {
+            let bx = object.borrow().get_velocity().expect(BREAKING_VALUE_KIND).x;
+            let by = object.borrow().get_velocity().expect(BREAKING_VALUE_KIND).y;
+            let mut m = object.borrow_mut()/* .coordinate() */;
+            m.coordinate().x += bx;
+            m.coordinate().y += by;
         }
     });
 
@@ -134,30 +148,19 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
 
 fn handle_connection(
     mut stream: TcpStream,
-    mut objects: Vec<Box<dyn Object>>,
+    mut objects: Vec<Rc<RefCell<dyn Object>>>,
     gravitational_constant: i32,
-) -> Vec<Box<dyn Object>> {
+) -> Vec<Rc<RefCell<dyn Object>>> {
     objects = apply_physics(objects, gravitational_constant);
 
-    #[derive(Deserialize, Serialize)]
-    struct Circle {
-        cx: i32,
-        cy: i32,
-        r: i32,
-        stroke: String,
-        fill: String,
-        #[serde(rename = "stroke-width")]
-        stroke_width: i32,
-    }
-
-    let get_circle = |o: &Box<dyn Object>| -> Circle {
-        match (o.is_gravity_source(), o.is_gravity_receiver()) {
+    let get_circle = |o: &Rc<RefCell<dyn Object>>| -> Circle {
+        match (o.borrow().is_gravity_source(), o.borrow().is_gravity_receiver()) {
             (true, false) => Circle { 
-                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.weight().expect(BREAKING_VALUE_KIND), stroke: "green".to_string(), 
+                cx: o.borrow().get_coordinate().x, cy: o.borrow().get_coordinate().y, r: o.borrow().weight().expect(BREAKING_VALUE_KIND), stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
             (false, true) => Circle { 
-                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: 2, stroke: "green".to_string(), 
+                cx: o.borrow().get_coordinate().x, cy: o.borrow().get_coordinate().y, r: 2, stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
             (true, true) => todo!(),
@@ -177,7 +180,7 @@ fn handle_connection(
     objects//.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
 }
 
-pub fn start_server(uri: &str, mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32) -> ! {
+pub fn start_server(uri: &str, mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32) -> ! {
     let listener = TcpListener::bind(uri).unwrap();
 
     for stream in listener.incoming() {
