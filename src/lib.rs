@@ -12,16 +12,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize)]
-struct Circle {
-    cx: i32,
-    cy: i32,
-    r: i32,
-    stroke: String,
-    fill: String,
-    #[serde(rename = "stroke-width")]
-    stroke_width: i32,
-}
+const BREAKING_VALUE_KIND: &str = "breaking usage of value kind for this type of `Object`";
 
 #[derive(Clone)]
 pub struct Planet {
@@ -37,29 +28,13 @@ impl Planet {
     fn get_weight(&self) -> i32 {
         self.weight
     }
-
-    fn as_circle(&self) -> Circle {
-        Circle {
-            cx: self.coordinate.x,
-            cy: self.coordinate.y,
-            r: self.weight,
-            stroke: "green".to_string(),
-            fill: "black".to_string(),
-            stroke_width: 3,
-        }
-    }
 }
 impl Object for Planet {
     fn is_gravity_source(&self) -> bool {true}
     fn is_gravity_receiver(&self) -> bool {false}    
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn weight(&self) -> i32 {self.weight}
-    fn velocity(&mut self) -> &mut Direction {
-        // TODO any graceful refactor?
-        /*      check the code -- maybe it's feasible to return
-                zero, but then it should be well-documented */
-        panic!("`Planet` have no `velocity`")
-    }
+    fn weight(&self) -> Option<i32> {Some(self.weight)}
+    fn velocity(&mut self) -> Option<&mut Direction> {None}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
 }
 
@@ -77,29 +52,13 @@ impl Asteroid {
     fn get_velocity(&self) -> Direction {
         self.velocity.clone()
     }
-
-    fn as_circle(&self) -> Circle {
-        Circle {
-            cx: self.coordinate.x,
-            cy: self.coordinate.y,
-            r: 2,
-            stroke: "green".to_string(),
-            fill: "black".to_string(),
-            stroke_width: 3,
-        }
-    }
 }
 impl Object for Asteroid {
     fn is_gravity_source(&self) -> bool {false}
     fn is_gravity_receiver(&self) -> bool {true}
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn weight(&self) -> i32 {
-        // TODO any graceful refactor?
-        /*      check the code -- maybe it's feasible to return
-                zero, but then it should be well-documented */
-        panic!("should never be called on gravity non-source")
-    }
-    fn velocity(&mut self) -> &mut Direction {&mut self.velocity}
+    fn weight(&self) -> Option<i32> {None}
+    fn velocity(&mut self) -> Option<&mut Direction> {Some(&mut self.velocity)}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
 }
 
@@ -108,8 +67,8 @@ pub trait Object {
     fn is_gravity_receiver(&self) -> bool;
     fn coordinate(&mut self) -> &mut Coordinate;
     fn get_coordinate(&self) -> Coordinate;
-    fn weight(&self) -> i32;
-    fn velocity(&mut self) -> &mut Direction;
+    fn weight(&self) -> Option<i32>;
+    fn velocity(&mut self) -> Option<&mut Direction>;
 }
 
 fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
@@ -122,7 +81,7 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
         .iter()
         .filter_map(|o| {
             return if o.is_gravity_source() {
-                Some((o.get_coordinate().clone(), o.weight()))
+                Some((o.get_coordinate().clone(), o.weight().expect(BREAKING_VALUE_KIND)))
             } else {
                 None
             };
@@ -153,10 +112,10 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
                             * gravitational_constant
                             / distance,
                     };
-                    asteroid.velocity().x -= force.x;
-                    asteroid.velocity().y -= force.y;
+                    asteroid.velocity().expect(BREAKING_VALUE_KIND).x -= force.x;
+                    asteroid.velocity().expect(BREAKING_VALUE_KIND).y -= force.y;
 
-                    let vel = asteroid.velocity().clone();
+                    let vel = asteroid.velocity().expect(BREAKING_VALUE_KIND).clone();
                 })
         }
     });
@@ -164,8 +123,8 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
     // Apply the new velocity to each object.
     objects.iter_mut().for_each(|object| {
         if object.is_gravity_receiver() {
-            object.coordinate().x += object.velocity().x;
-            object.coordinate().y += object.velocity().y;
+            object.coordinate().x += object.velocity().expect(BREAKING_VALUE_KIND).x;
+            object.coordinate().y += object.velocity().expect(BREAKING_VALUE_KIND).y;
         }
     });
 
@@ -180,10 +139,21 @@ fn handle_connection(
 ) -> Vec<Box<dyn Object>> {
     objects = apply_physics(objects, gravitational_constant);
 
+    #[derive(Deserialize, Serialize)]
+    struct Circle {
+        cx: i32,
+        cy: i32,
+        r: i32,
+        stroke: String,
+        fill: String,
+        #[serde(rename = "stroke-width")]
+        stroke_width: i32,
+    }
+
     let get_circle = |o: &Box<dyn Object>| -> Circle {
         match (o.is_gravity_source(), o.is_gravity_receiver()) {
             (true, false) => Circle { 
-                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.weight(), stroke: "green".to_string(), 
+                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.weight().expect(BREAKING_VALUE_KIND), stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
             (false, true) => Circle { 
