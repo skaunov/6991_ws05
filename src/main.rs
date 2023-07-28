@@ -1,7 +1,7 @@
 use simulator_lib::directions::{coordinate::Coordinate, direction::Direction};
-use simulator_lib::{start_server, Asteroid, Object, Planet};
+use simulator_lib::{start_server, Asteroid, GravityObject, Planet};
 fn main() {
-    let mut objects: Vec<Box<dyn Object>> = vec![
+    let mut objects: Vec<Box<dyn GravityObject>> = vec![
         Box::new(Planet {
             coordinate: Coordinate::new(500, 500),
             weight: 50,

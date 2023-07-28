@@ -1,3 +1,4 @@
+// TODO would be nice to cover the whole things with test, but looks like it end up with only smoke test (running and looks from afar like what was intended)
 pub mod directions;
 
 use crate::directions::{coordinate::Coordinate, direction::Direction};
@@ -29,13 +30,18 @@ impl Planet {
         self.weight
     }
 }
-impl Object for Planet {
-    fn is_gravity_source(&self) -> bool {true}
-    fn is_gravity_receiver(&self) -> bool {false}    
+impl GravitySource for Planet {
+    // fn is_gravity_source(&self) -> bool {true}
+    // fn is_gravity_receiver(&self) -> bool {false}    
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn weight(&self) -> Option<i32> {Some(self.weight)}
-    fn velocity(&mut self) -> Option<&mut Direction> {None}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
+    fn weight(&mut self) -> i32 {self.weight}
+    fn get_weight(&self) -> i32 {self.weight}
+}
+impl GravityObject for Planet {
+    fn one(&self) -> Option<&dyn GravitySource> {Some(self)}
+    fn other(&self) -> Option<&dyn GravityReceiver> {None}
+    fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver> {None}
 }
 
 #[derive(Clone)]
@@ -53,47 +59,65 @@ impl Asteroid {
         self.velocity.clone()
     }
 }
-impl Object for Asteroid {
-    fn is_gravity_source(&self) -> bool {false}
-    fn is_gravity_receiver(&self) -> bool {true}
+impl GravityReceiver for Asteroid {
+    // fn is_gravity_source(&self) -> bool {false}
+    // fn is_gravity_receiver(&self) -> bool {true}
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn weight(&self) -> Option<i32> {None}
-    fn velocity(&mut self) -> Option<&mut Direction> {Some(&mut self.velocity)}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
+    fn velocity(&mut self) -> &mut Direction {&mut self.velocity}
+    fn get_velocity(&self) -> &Direction {&self.velocity}
+}
+impl GravityObject for Asteroid {
+    fn one(&self) -> Option<&dyn GravitySource> {None}
+    fn other(&self) -> Option<&dyn GravityReceiver> {Some(self)}
+    fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver> {Some(self)}
 }
 
-pub trait Object {
-    fn is_gravity_source(&self) -> bool;
-    fn is_gravity_receiver(&self) -> bool;
+// TODO check privacy preservation against initial code
+pub trait GravityReceiver {
+    //  TODO remove this two obsolete helpers
+    // fn is_gravity_source(&self) -> bool {false};
+    // fn is_gravity_receiver(&self) -> bool {true};
     fn coordinate(&mut self) -> &mut Coordinate;
-    fn get_coordinate(&self) -> Coordinate;
-    fn weight(&self) -> Option<i32>;
-    fn velocity(&mut self) -> Option<&mut Direction>;
+    fn get_coordinate(&self) -> Coordinate;    
+    fn velocity(&mut self) -> &mut Direction;
+    fn get_velocity(&self) -> &Direction;
+}
+pub trait GravitySource {
+    //  TODO remove this two obsolete helpers
+    // fn is_gravity_source(&self) -> bool {true};
+    // fn is_gravity_receiver(&self) -> bool {false};
+    fn coordinate(&mut self) -> &mut Coordinate;
+    fn get_coordinate(&self) -> Coordinate;    
+    fn weight(&mut self) -> i32;
+    fn get_weight(&self) -> i32;
+}
+pub trait GravityObject {
+    fn one(&self) -> Option<&dyn GravitySource>;
+    fn other(&self) -> Option<&dyn GravityReceiver>;
+    fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver>;
 }
 
 fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
     (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f64).sqrt() as i32
 }
 
-fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32) -> Vec<Box<dyn Object>> {
+fn apply_physics(mut objects: Vec<Box<dyn GravityObject>>, gravitational_constant: i32) -> Vec<Box<dyn GravityObject>> {
     // Go through each pair of objects, and apply
+    /*      TODO I still go with the assumption that `GravityObject` can be either `GravityReceiver` of `GravitySource`, though obvious next step would be break this assumption, and couple 
+    of `todo!()`s left in the trait are precisely for it. Though it would need a separate upgrade/refactoring. */
     let gravity_sources = objects
         .iter()
-        .filter_map(|o| {
-            return if o.is_gravity_source() {
-                Some((o.get_coordinate().clone(), o.weight().expect(BREAKING_VALUE_KIND)))
-            } else {
-                None
-            };
-        })
+        .filter_map(|o| {o.one().map(|o| (o.get_coordinate(), o.get_weight()))})
         .collect::<Vec<_>>();
 
     objects.iter_mut().for_each(|o| {
-        if o.is_gravity_receiver() {
+        if let Some(o) = o.receiver_mut() {
             let asteroid = o;
             gravity_sources
                 .iter()
                 .for_each(|(planet_coord, planet_weight)| {
+                    let planet_coord = planet_coord;
                     let distance = get_distance(
                         planet_coord.x,
                         planet_coord.y,
@@ -102,6 +126,7 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
                     );
                     let distance = distance * distance;
 
+                    let planet_weight = planet_weight;
                     let force = Direction {
                         x: (asteroid.coordinate().x - planet_coord.x)
                             * planet_weight
@@ -122,9 +147,9 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
 
     // Apply the new velocity to each object.
     objects.iter_mut().for_each(|object| {
-        if object.is_gravity_receiver() {
-            object.coordinate().x += object.velocity().expect(BREAKING_VALUE_KIND).x;
-            object.coordinate().y += object.velocity().expect(BREAKING_VALUE_KIND).y;
+        if let Some(object) = object.receiver_mut() {
+            object.coordinate().x += object.velocity().x;
+            object.coordinate().y += object.velocity().y;
         }
     });
 
@@ -134,9 +159,9 @@ fn apply_physics(mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32)
 
 fn handle_connection(
     mut stream: TcpStream,
-    mut objects: Vec<Box<dyn Object>>,
+    mut objects: Vec<Box<dyn GravityObject>>,
     gravitational_constant: i32,
-) -> Vec<Box<dyn Object>> {
+) -> Vec<Box<dyn GravityObject>> {
     objects = apply_physics(objects, gravitational_constant);
 
     #[derive(Deserialize, Serialize)]
@@ -149,19 +174,20 @@ fn handle_connection(
         #[serde(rename = "stroke-width")]
         stroke_width: i32,
     }
-
-    let get_circle = |o: &Box<dyn Object>| -> Circle {
-        match (o.is_gravity_source(), o.is_gravity_receiver()) {
-            (true, false) => Circle { 
-                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.weight().expect(BREAKING_VALUE_KIND), stroke: "green".to_string(), 
+    
+    let get_circle = |o: &Box<dyn GravityObject>| -> Circle {
+        match (o.one(), o.other()) {
+            (Some(o), None) => Circle { 
+                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.get_weight(), stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
-            (false, true) => Circle { 
+            (None, Some(o)) => Circle { 
                 cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: 2, stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
-            (true, true) => todo!(),
-            (false, false) => todo!(),
+            (Some(_), Some(_)) => todo!(),
+            (None, None) => todo!(),
+            
         }
     };
     let circles = objects.iter().map(|o| get_circle(o)).collect::<Vec<_>>();
@@ -177,7 +203,7 @@ fn handle_connection(
     objects//.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
 }
 
-pub fn start_server(uri: &str, mut objects: Vec<Box<dyn Object>>, gravitational_constant: i32) -> ! {
+pub fn start_server(uri: &str, mut objects: Vec<Box<dyn GravityObject>>, gravitational_constant: i32) -> ! {
     let listener = TcpListener::bind(uri).unwrap();
 
     for stream in listener.incoming() {
