@@ -15,26 +15,26 @@ impl Object for Pulsar {
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
 
-    fn weight(&mut self) -> i32 {
+    fn weight(&mut self) -> Option<i32> {
         match self.weight.state {
             Pulse::Off => {
                 if self.weight.counter >= 2 {self.weight.state = Pulse::On};
-                0 // TODO having a coef here would be better, but let's keep the first step as simple as possible
+                Some(0) // TODO having a coef here would be better, but let's keep the first step as simple as possible
             },
             Pulse::On => {
                 if self.weight.counter >= 3 {self.weight.state = Pulse::Off};
-                self.weight.value
+                Some(self.weight.value)
             }
         }
     }
-    fn get_weight(& self) -> i32 {
+    fn get_weight(& self) -> Option<i32> {
         match self.weight.state {
-            Pulse::Off => 0,
-            Pulse::On => self.weight.value,
+            Pulse::Off => Some(0),
+            Pulse::On => Some(self.weight.value),
         }
     }
 
-    fn velocity(&mut self) -> &mut Direction {
+    fn velocity(&mut self) -> Option<&mut Direction> {
         // TODO any graceful refactor?
         /*      check the code -- maybe it's feasible to return
                 zero, but then it should be well-documented */
