@@ -31,15 +31,10 @@ impl Object for Distantoid {
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
 
-    fn weight(&self) -> i32 {
-        // TODO any graceful refactor?
-        /*      check the code -- maybe it's feasible to return
-                zero, but then it should be well-documented */
-        panic!("should never be called on gravity non-source")
-    }
+    fn weight(&self) -> Option<i32> {None}
 
-    fn velocity(&mut self) -> &mut Direction {&mut self.velocity}
-    fn get_velocity(&self) -> &Direction {&self.velocity}
+    fn velocity(&mut self) -> Option<&mut Direction> {Some(&mut self.velocity)}
+    fn get_velocity(&self) -> Option<&Direction> {Some(&self.velocity)}
 }
 
 fn main() {

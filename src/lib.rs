@@ -35,12 +35,7 @@ impl Object for Planet {
     fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
     fn weight(&self) -> Option<i32> {Some(self.weight)}
     fn velocity(&mut self) -> Option<&mut Direction> {None}
-    fn get_velocity(&self) -> &Direction {
-        // TODO any graceful refactor?
-        /*      check the code -- maybe it's feasible to return
-                zero, but then it should be well-documented */
-        panic!("`Planet` have no `velocity`")
-    }
+    fn get_velocity(&self) -> Option<&Direction> {None}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
 }
 
@@ -67,7 +62,7 @@ impl Object for Asteroid {
     fn velocity(&mut self) -> Option<&mut Direction> {Some(&mut self.velocity)}
     fn get_coordinate(&self) -> Coordinate {self.coordinate}
 
-    fn get_velocity(&self) -> &Direction {todo!()}
+    fn get_velocity(&self) -> Option<&Direction> {todo!()}
 }
 
 pub trait Object {
@@ -77,7 +72,7 @@ pub trait Object {
     fn get_coordinate(&self) -> Coordinate;
     fn weight(&self) -> Option<i32>;
     fn velocity(&mut self) -> Option<&mut Direction>;
-    fn get_velocity(&self) -> &Direction;
+    fn get_velocity(&self) -> Option<&Direction>;
 }
 
 fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
@@ -153,6 +148,17 @@ fn handle_connection(
 ) -> Vec<Rc<RefCell<dyn Object>>> {
     objects = apply_physics(objects, gravitational_constant);
 
+    #[derive(Deserialize, Serialize)]
+    struct Circle {
+        cx: i32,
+        cy: i32,
+        r: i32,
+        stroke: String,
+        fill: String,
+        #[serde(rename = "stroke-width")]
+        stroke_width: i32,
+    }
+    
     let get_circle = |o: &Rc<RefCell<dyn Object>>| -> Circle {
         match (o.borrow().is_gravity_source(), o.borrow().is_gravity_receiver()) {
             (true, false) => Circle { 
