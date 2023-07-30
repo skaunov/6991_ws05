@@ -5,7 +5,8 @@ use simulator_lib::directions::{coordinate::Coordinate, direction::Direction};
 use simulator_lib::{start_server, Asteroid, Object, Planet};
 #[derive(Clone)]
 struct Distantoid {
-    // I want to make this test with minimal changes to the `lib`, so it's a work around, that could be generalized into it. TODO think if it's possible at all to do that "trick" for more than one gravity source.
+    /* I want to do this task with minimal changes to the `lib`, so it's a work around, that could be generalized into it. 
+    ~~TODO think if it's possible at all to do that "trick" for more than one gravity source.~~ */
     /*      I come to the conclusion that it's impossible to have a reference to the gravity source,
     since `lib` is built around `&mut` and prevents even reading the object or its method.
             So it seems the only workaround I see now is to move the logic to the `Planet`, which
@@ -14,7 +15,7 @@ struct Distantoid {
     coordinate: Coordinate, velocity: Direction
 }
 impl Distantoid {
-    // As soon this `fn` wasn't made `pub` in `lib`, let's just copy-paste it from there. Looks like a good candidate for `directions`, btw.
+    // As soon this `fn` wasn't made `pub` in `lib`, let's just paste it from there. Looks like a good candidate for `directions`, btw.
     fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
         (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f64).sqrt() as i32
     }

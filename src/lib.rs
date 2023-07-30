@@ -79,13 +79,18 @@ fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
     (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f64).sqrt() as i32
 }
 
-fn apply_physics(mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32) -> Vec<Rc<RefCell<dyn Object>>> {
+fn apply_physics(
+    mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32
+) -> Vec<Rc<RefCell<dyn Object>>> {
     // Go through each pair of objects, and apply
     let gravity_sources = objects
         .iter()
         .filter_map(|o| {
             return if o.borrow().is_gravity_source() {
-                Some((o.borrow().get_coordinate().clone(), o.borrow().weight().expect(BREAKING_VALUE_KIND)))
+                Some((
+                    o.borrow().get_coordinate().clone(), 
+                    o.borrow().weight().expect(BREAKING_VALUE_KIND)
+                ))
             } else {
                 None
             };
@@ -102,7 +107,8 @@ fn apply_physics(mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_consta
                     let distance = get_distance(
                         planet_coord.x,
                         planet_coord.y,
-                        /* TODO understand if it's possible to go here without mutability (which isn't used anyway) */
+                        /* ~~TODO understand if it's possible to go here without mutability (which isn't used anyway)~~ */
+                        //      preliminary answer is yes, but it would require to refactor whole function to be functional and ditch in-place update
                         asteroid.borrow().get_coordinate().x,
                         asteroid.borrow().get_coordinate().y,
                     );
@@ -162,7 +168,10 @@ fn handle_connection(
     let get_circle = |o: &Rc<RefCell<dyn Object>>| -> Circle {
         match (o.borrow().is_gravity_source(), o.borrow().is_gravity_receiver()) {
             (true, false) => Circle { 
-                cx: o.borrow().get_coordinate().x, cy: o.borrow().get_coordinate().y, r: o.borrow().weight().expect(BREAKING_VALUE_KIND), stroke: "green".to_string(), 
+                cx: o.borrow().get_coordinate().x, 
+                cy: o.borrow().get_coordinate().y, 
+                r: o.borrow().weight().expect(BREAKING_VALUE_KIND), 
+                stroke: "green".to_string(), 
                 fill: "black".to_string(), stroke_width: 3
             },
             (false, true) => Circle { 
@@ -186,7 +195,9 @@ fn handle_connection(
     objects//.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
 }
 
-pub fn start_server(uri: &str, mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32) -> ! {
+pub fn start_server(
+    uri: &str, mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32
+) -> ! {
     let listener = TcpListener::bind(uri).unwrap();
 
     for stream in listener.incoming() {
