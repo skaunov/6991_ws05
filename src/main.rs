@@ -5,14 +5,15 @@ use simulator_lib::directions::{coordinate::Coordinate, direction::Direction};
 use simulator_lib::{start_server, Asteroid, Object, Planet};
 #[derive(Clone)]
 struct Distantoid {
-    /* I want to do this task with minimal changes to the `lib`, so it's a work around, that could be generalized into it. 
+    /* I want to do this task with minimal changes to the `lib`, so it's a work around, that could be generalized into it.
     ~~TODO think if it's possible at all to do that "trick" for more than one gravity source.~~ */
     /*      I come to the conclusion that it's impossible to have a reference to the gravity source,
     since `lib` is built around `&mut` and prevents even reading the object or its method.
             So it seems the only workaround I see now is to move the logic to the `Planet`, which
             isn't really satisfying, but I hope it will do the trick. */
-    source_gr: Rc<RefCell<dyn Object>>, 
-    coordinate: Coordinate, velocity: Direction
+    source_gr: Rc<RefCell<dyn Object>>,
+    coordinate: Coordinate,
+    velocity: Direction,
 }
 impl Distantoid {
     // As soon this `fn` wasn't made `pub` in `lib`, let's just paste it from there. Looks like a good candidate for `directions`, btw.
@@ -21,21 +22,35 @@ impl Distantoid {
     }
 }
 impl Object for Distantoid {
-    fn is_gravity_source(&self) -> bool {false}
+    fn is_gravity_source(&self) -> bool {
+        false
+    }
     fn is_gravity_receiver(&self) -> bool {
         Distantoid::get_distance(
-            self.coordinate.x, self.coordinate.y, 
-            self.source_gr.borrow().get_coordinate().x, self.source_gr.borrow().get_coordinate().y
+            self.coordinate.x,
+            self.coordinate.y,
+            self.source_gr.borrow().get_coordinate().x,
+            self.source_gr.borrow().get_coordinate().y,
         ) > 100
     }
 
-    fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn get_coordinate(&self) -> Coordinate {self.coordinate}
+    fn coordinate(&mut self) -> &mut Coordinate {
+        &mut self.coordinate
+    }
+    fn get_coordinate(&self) -> Coordinate {
+        self.coordinate
+    }
 
-    fn weight(&self) -> Option<i32> {None}
+    fn weight(&self) -> Option<i32> {
+        None
+    }
 
-    fn velocity(&mut self) -> Option<&mut Direction> {Some(&mut self.velocity)}
-    fn get_velocity(&self) -> Option<&Direction> {Some(&self.velocity)}
+    fn velocity(&mut self) -> Option<&mut Direction> {
+        Some(&mut self.velocity)
+    }
+    fn get_velocity(&self) -> Option<&Direction> {
+        Some(&self.velocity)
+    }
 }
 
 fn main() {
@@ -46,14 +61,15 @@ fn main() {
     let mut objects: Vec<Rc<RefCell<dyn Object>>> = vec![
         source_gr.clone(),
         Rc::new(RefCell::new(Distantoid {
-            coordinate:Coordinate::new(250,250), velocity:Direction{x:30,y: -40}, 
-            source_gr: source_gr.clone()
+            coordinate: Coordinate::new(250, 250),
+            velocity: Direction { x: 30, y: -40 },
+            source_gr: source_gr.clone(),
         })),
         Rc::new(RefCell::new(Distantoid {
             coordinate: Coordinate::new(750, 750),
             velocity: Direction { x: -30, y: 40 },
-            source_gr: source_gr.clone()
-        }))
+            source_gr: source_gr.clone(),
+        })),
     ];
 
     println!("Starting server. Open phys_simulation.html to see the simulation.");

@@ -3,11 +3,13 @@ pub mod directions;
 use crate::directions::{coordinate::Coordinate, direction::Direction};
 
 use std::{
+    cell::RefCell,
     fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
+    rc::Rc,
     thread,
-    time::Duration, rc::Rc, cell::RefCell,
+    time::Duration,
 };
 
 use serde::{Deserialize, Serialize};
@@ -30,13 +32,27 @@ impl Planet {
     }
 }
 impl Object for Planet {
-    fn is_gravity_source(&self) -> bool {true}
-    fn is_gravity_receiver(&self) -> bool {false}    
-    fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn weight(&self) -> Option<i32> {Some(self.weight)}
-    fn velocity(&mut self) -> Option<&mut Direction> {None}
-    fn get_velocity(&self) -> Option<&Direction> {None}
-    fn get_coordinate(&self) -> Coordinate {self.coordinate}
+    fn is_gravity_source(&self) -> bool {
+        true
+    }
+    fn is_gravity_receiver(&self) -> bool {
+        false
+    }
+    fn coordinate(&mut self) -> &mut Coordinate {
+        &mut self.coordinate
+    }
+    fn weight(&self) -> Option<i32> {
+        Some(self.weight)
+    }
+    fn velocity(&mut self) -> Option<&mut Direction> {
+        None
+    }
+    fn get_velocity(&self) -> Option<&Direction> {
+        None
+    }
+    fn get_coordinate(&self) -> Coordinate {
+        self.coordinate
+    }
 }
 
 #[derive(Clone)]
@@ -55,14 +71,28 @@ impl Asteroid {
     }
 }
 impl Object for Asteroid {
-    fn is_gravity_source(&self) -> bool {false}
-    fn is_gravity_receiver(&self) -> bool {true}
-    fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn weight(&self) -> Option<i32> {None}
-    fn velocity(&mut self) -> Option<&mut Direction> {Some(&mut self.velocity)}
-    fn get_coordinate(&self) -> Coordinate {self.coordinate}
+    fn is_gravity_source(&self) -> bool {
+        false
+    }
+    fn is_gravity_receiver(&self) -> bool {
+        true
+    }
+    fn coordinate(&mut self) -> &mut Coordinate {
+        &mut self.coordinate
+    }
+    fn weight(&self) -> Option<i32> {
+        None
+    }
+    fn velocity(&mut self) -> Option<&mut Direction> {
+        Some(&mut self.velocity)
+    }
+    fn get_coordinate(&self) -> Coordinate {
+        self.coordinate
+    }
 
-    fn get_velocity(&self) -> Option<&Direction> {todo!()}
+    fn get_velocity(&self) -> Option<&Direction> {
+        todo!()
+    }
 }
 
 pub trait Object {
@@ -80,7 +110,8 @@ fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
 }
 
 fn apply_physics(
-    mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32
+    mut objects: Vec<Rc<RefCell<dyn Object>>>,
+    gravitational_constant: i32,
 ) -> Vec<Rc<RefCell<dyn Object>>> {
     // Go through each pair of objects, and apply
     let gravity_sources = objects
@@ -88,8 +119,8 @@ fn apply_physics(
         .filter_map(|o| {
             return if o.borrow().is_gravity_source() {
                 Some((
-                    o.borrow().get_coordinate().clone(), 
-                    o.borrow().weight().expect(BREAKING_VALUE_KIND)
+                    o.borrow().get_coordinate().clone(),
+                    o.borrow().weight().expect(BREAKING_VALUE_KIND),
                 ))
             } else {
                 None
@@ -164,19 +195,27 @@ fn handle_connection(
         #[serde(rename = "stroke-width")]
         stroke_width: i32,
     }
-    
+
     let get_circle = |o: &Rc<RefCell<dyn Object>>| -> Circle {
-        match (o.borrow().is_gravity_source(), o.borrow().is_gravity_receiver()) {
-            (true, false) => Circle { 
-                cx: o.borrow().get_coordinate().x, 
-                cy: o.borrow().get_coordinate().y, 
-                r: o.borrow().weight().expect(BREAKING_VALUE_KIND), 
-                stroke: "green".to_string(), 
-                fill: "black".to_string(), stroke_width: 3
+        match (
+            o.borrow().is_gravity_source(),
+            o.borrow().is_gravity_receiver(),
+        ) {
+            (true, false) => Circle {
+                cx: o.borrow().get_coordinate().x,
+                cy: o.borrow().get_coordinate().y,
+                r: o.borrow().weight().expect(BREAKING_VALUE_KIND),
+                stroke: "green".to_string(),
+                fill: "black".to_string(),
+                stroke_width: 3,
             },
-            (false, true) => Circle { 
-                cx: o.borrow().get_coordinate().x, cy: o.borrow().get_coordinate().y, r: 2, stroke: "green".to_string(), 
-                fill: "black".to_string(), stroke_width: 3
+            (false, true) => Circle {
+                cx: o.borrow().get_coordinate().x,
+                cy: o.borrow().get_coordinate().y,
+                r: 2,
+                stroke: "green".to_string(),
+                fill: "black".to_string(),
+                stroke_width: 3,
             },
             (true, true) => todo!(),
             (false, false) => todo!(),
@@ -192,11 +231,13 @@ fn handle_connection(
     stream.flush().unwrap();
     stream.shutdown(std::net::Shutdown::Both).unwrap();
 
-    objects//.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
+    objects //.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
 }
 
 pub fn start_server(
-    uri: &str, mut objects: Vec<Rc<RefCell<dyn Object>>>, gravitational_constant: i32
+    uri: &str,
+    mut objects: Vec<Rc<RefCell<dyn Object>>>,
+    gravitational_constant: i32,
 ) -> ! {
     let listener = TcpListener::bind(uri).unwrap();
 
