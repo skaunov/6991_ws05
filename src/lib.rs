@@ -13,8 +13,6 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
-const BREAKING_VALUE_KIND: &str = "breaking usage of value kind for this type of `Object`";
-
 #[derive(Clone)]
 pub struct Planet {
     pub coordinate: Coordinate,
@@ -137,10 +135,10 @@ fn apply_physics(mut objects: Vec<Box<dyn GravityObject>>, gravitational_constan
                             * gravitational_constant
                             / distance,
                     };
-                    asteroid.velocity().expect(BREAKING_VALUE_KIND).x -= force.x;
-                    asteroid.velocity().expect(BREAKING_VALUE_KIND).y -= force.y;
+                    asteroid.velocity().x -= force.x;
+                    asteroid.velocity().y -= force.y;
 
-                    let vel = asteroid.velocity().expect(BREAKING_VALUE_KIND).clone();
+                    let vel = asteroid.velocity().clone();
                 })
         }
     });
