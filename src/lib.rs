@@ -71,20 +71,14 @@ impl GravityObject for Asteroid {
     fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver> {Some(self)}
 }
 
-// TODO check privacy preservation against initial code
+// ~~TODO check privacy preservation against initial code~~
 pub trait GravityReceiver {
-    //  TODO remove this two obsolete helpers
-    // fn is_gravity_source(&self) -> bool {false};
-    // fn is_gravity_receiver(&self) -> bool {true};
     fn coordinate(&mut self) -> &mut Coordinate;
     fn get_coordinate(&self) -> Coordinate;    
     fn velocity(&mut self) -> &mut Direction;
     fn get_velocity(&self) -> &Direction;
 }
 pub trait GravitySource {
-    //  TODO remove this two obsolete helpers
-    // fn is_gravity_source(&self) -> bool {true};
-    // fn is_gravity_receiver(&self) -> bool {false};
     fn coordinate(&mut self) -> &mut Coordinate;
     fn get_coordinate(&self) -> Coordinate;    
     fn weight(&mut self) -> i32;
@@ -102,8 +96,10 @@ fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
 
 fn apply_physics(mut objects: Vec<Box<dyn GravityObject>>, gravitational_constant: i32) -> Vec<Box<dyn GravityObject>> {
     // Go through each pair of objects, and apply
-    /*      TODO I still go with the assumption that `GravityObject` can be either `GravityReceiver` of `GravitySource`, though obvious next step would be break this assumption, and couple 
+    /*      ~~TODO~~ I still go with the assumption that `GravityObject` can be either `GravityReceiver` or `GravitySource`, though obvious next step would be break this assumption, and couple 
     of `todo!()`s left in the trait are precisely for it. Though it would need a separate upgrade/refactoring. */
+    /*          actually (thanks to `rebase`) the only couple of `todo()` left are in `handle_connection`; 
+    and even if being filled here's no type which have both kinds of `GravityObject` `trait` to experience such a luxury */
     let gravity_sources = objects
         .iter()
         .filter_map(|o| {o.one().map(|o| (o.get_coordinate(), o.get_weight()))})
@@ -185,7 +181,6 @@ fn handle_connection(
             },
             (Some(_), Some(_)) => todo!(),
             (None, None) => todo!(),
-            
         }
     };
     let circles = objects.iter().map(|o| get_circle(o)).collect::<Vec<_>>();
