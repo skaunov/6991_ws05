@@ -19,15 +19,6 @@ pub struct Planet {
     pub weight: i32,
 }
 
-impl Planet {
-    fn get_location(&self) -> Coordinate {
-        self.coordinate.clone()
-    }
-
-    fn get_weight(&self) -> i32 {
-        self.weight
-    }
-}
 impl GravitySource for Planet {
     // fn is_gravity_source(&self) -> bool {true}
     // fn is_gravity_receiver(&self) -> bool {false}
@@ -62,15 +53,6 @@ pub struct Asteroid {
     pub velocity: Direction,
 }
 
-impl Asteroid {
-    fn get_location(&self) -> Coordinate {
-        self.coordinate.clone()
-    }
-
-    fn get_velocity(&self) -> Direction {
-        self.velocity.clone()
-    }
-}
 impl GravityReceiver for Asteroid {
     // fn is_gravity_source(&self) -> bool {false}
     // fn is_gravity_receiver(&self) -> bool {true}
@@ -165,7 +147,7 @@ fn apply_physics(
                     asteroid.velocity().x -= force.x;
                     asteroid.velocity().y -= force.y;
 
-                    let vel = asteroid.velocity().clone();
+                    let vel = asteroid.velocity();
                 })
         }
     });
