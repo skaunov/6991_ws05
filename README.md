@@ -1,10 +1,10 @@
-This is solution for [workshop]. I feel that I've take a slightly different path from the one intended by the authors (other workshops was much more clear/straightforward to me except [one other]), so I'm asking to review my solution to this one.
+This is solution for [workshop]. I feel that I took a slightly different path from the one intended by the authors (other workshops was much more clear/straightforward to me except [one other]), so I'm asking to review my solution to this one.
 
 # solution and exercise text
 
-[Workshop] offers 7 tasks, which are solved in 4 branches. The [first commit](https://github.com/skaunov/6991_ws05/commit/ffb3cdee5b2f00bc1d96f2115346f817c857e991) for all of them is the initial code provided as the workshop starter. This (`master`) branch contains solution to tasks 1-4, and solutions to tasks #5 to #7 are presented in their own respective branches: 
-5) <https://github.com/skaunov/6991_ws05/tree/test_pulsar>,
-6) <https://github.com/skaunov/6991_ws05/tree/test_distantoid>,
+[Workshop] offers 7 tasks, which are solved in 4 branches. The initial code provided as the workshop starter is in the [first commit](https://github.com/skaunov/6991_ws05/commit/ffb3cdee5b2f00bc1d96f2115346f817c857e991) shared by all of them. This (`master`) branch contains solution to tasks ##1-4, and solutions to tasks #5 to #7 are presented in their own respective branches: 
+5) <https://github.com/skaunov/6991_ws05/tree/test_pulsar>, 
+6) <https://github.com/skaunov/6991_ws05/tree/test_distantoid>, 
 7) <https://github.com/skaunov/6991_ws05/tree/test_combination_task7>.
 
 For archiving and convinience reasons text of the workshop can be found at <https://github.com/skaunov/6991_ws05/blob/master/README_exerciseText.md>.
