@@ -1,5 +1,5 @@
 use simulator_lib::directions::{coordinate::Coordinate, direction::Direction};
-use simulator_lib::{start_server, Asteroid, Object, Planet};
+use simulator_lib::{start_server, Asteroid, Object};
 
 #[derive(Clone)]
 enum Pulse {
