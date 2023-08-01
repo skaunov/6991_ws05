@@ -22,15 +22,6 @@ pub struct Planet {
     pub weight: i32,
 }
 
-impl Planet {
-    fn get_location(&self) -> Coordinate {
-        self.coordinate.clone()
-    }
-
-    fn get_weight(&self) -> i32 {
-        self.weight
-    }
-}
 impl Object for Planet {
     fn is_gravity_source(&self) -> bool {
         true
@@ -61,15 +52,6 @@ pub struct Asteroid {
     pub velocity: Direction,
 }
 
-impl Asteroid {
-    fn get_location(&self) -> Coordinate {
-        self.coordinate.clone()
-    }
-
-    fn get_velocity(&self) -> Direction {
-        self.velocity.clone()
-    }
-}
 impl Object for Asteroid {
     fn is_gravity_source(&self) -> bool {
         false
@@ -119,7 +101,7 @@ fn apply_physics(
         .filter_map(|o| {
             return if o.borrow().is_gravity_source() {
                 Some((
-                    o.borrow().get_coordinate().clone(),
+                    o.borrow().get_coordinate(),
                     o.borrow().weight().expect(BREAKING_VALUE_KIND),
                 ))
             } else {
@@ -158,7 +140,7 @@ fn apply_physics(
                     asteroid.borrow_mut().velocity().expect(BREAKING_VALUE_KIND).x -= force.x;
                     asteroid.borrow_mut().velocity().expect(BREAKING_VALUE_KIND).y -= force.y;
 
-                    let vel = asteroid.borrow().get_velocity().expect(BREAKING_VALUE_KIND).clone();
+                    let vel = asteroid.borrow().get_velocity().expect(BREAKING_VALUE_KIND);
                 })
         }
     });

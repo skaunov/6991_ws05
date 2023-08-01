@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use simulator_lib::directions::{coordinate::Coordinate, direction::Direction};
-use simulator_lib::{start_server, Asteroid, Object, Planet};
+use simulator_lib::{start_server, Object, Planet};
 #[derive(Clone)]
 struct Distantoid {
     /* I want to do this task with minimal changes to the `lib`, so it's a work around, that could be generalized into it.
@@ -68,7 +68,7 @@ fn main() {
         Rc::new(RefCell::new(Distantoid {
             coordinate: Coordinate::new(750, 750),
             velocity: Direction { x: -30, y: 40 },
-            source_gr: source_gr.clone(),
+            source_gr,
         })),
     ];
 
