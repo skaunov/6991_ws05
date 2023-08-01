@@ -4,9 +4,9 @@
 
 > Your tutor will discuss what polymorphism is, and the three approaches to polymorphism in Rust:
 > 
->     Enums
-    Generics
-    Dynamic Dispatch
+> * Enums
+> * Generics
+> * Dynamic Dispatch
 > 
 > You should be able to identify the broad ideas of how they work, and the reasons you might choose one over the other.
 
