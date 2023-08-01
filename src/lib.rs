@@ -30,16 +30,30 @@ impl Planet {
 }
 impl GravitySource for Planet {
     // fn is_gravity_source(&self) -> bool {true}
-    // fn is_gravity_receiver(&self) -> bool {false}    
-    fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn get_coordinate(&self) -> Coordinate {self.coordinate}
-    fn weight(&mut self) -> i32 {self.weight}
-    fn get_weight(&self) -> i32 {self.weight}
+    // fn is_gravity_receiver(&self) -> bool {false}
+    fn coordinate(&mut self) -> &mut Coordinate {
+        &mut self.coordinate
+    }
+    fn get_coordinate(&self) -> Coordinate {
+        self.coordinate
+    }
+    fn weight(&mut self) -> i32 {
+        self.weight
+    }
+    fn get_weight(&self) -> i32 {
+        self.weight
+    }
 }
 impl GravityObject for Planet {
-    fn one(&self) -> Option<&dyn GravitySource> {Some(self)}
-    fn other(&self) -> Option<&dyn GravityReceiver> {None}
-    fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver> {None}
+    fn one(&self) -> Option<&dyn GravitySource> {
+        Some(self)
+    }
+    fn other(&self) -> Option<&dyn GravityReceiver> {
+        None
+    }
+    fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver> {
+        None
+    }
 }
 
 #[derive(Clone)]
@@ -60,27 +74,41 @@ impl Asteroid {
 impl GravityReceiver for Asteroid {
     // fn is_gravity_source(&self) -> bool {false}
     // fn is_gravity_receiver(&self) -> bool {true}
-    fn coordinate(&mut self) -> &mut Coordinate {&mut self.coordinate}
-    fn get_coordinate(&self) -> Coordinate {self.coordinate}
-    fn velocity(&mut self) -> &mut Direction {&mut self.velocity}
-    fn get_velocity(&self) -> &Direction {&self.velocity}
+    fn coordinate(&mut self) -> &mut Coordinate {
+        &mut self.coordinate
+    }
+    fn get_coordinate(&self) -> Coordinate {
+        self.coordinate
+    }
+    fn velocity(&mut self) -> &mut Direction {
+        &mut self.velocity
+    }
+    fn get_velocity(&self) -> &Direction {
+        &self.velocity
+    }
 }
 impl GravityObject for Asteroid {
-    fn one(&self) -> Option<&dyn GravitySource> {None}
-    fn other(&self) -> Option<&dyn GravityReceiver> {Some(self)}
-    fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver> {Some(self)}
+    fn one(&self) -> Option<&dyn GravitySource> {
+        None
+    }
+    fn other(&self) -> Option<&dyn GravityReceiver> {
+        Some(self)
+    }
+    fn receiver_mut(&mut self) -> Option<&mut dyn GravityReceiver> {
+        Some(self)
+    }
 }
 
 // ~~TODO check privacy preservation against initial code~~
 pub trait GravityReceiver {
     fn coordinate(&mut self) -> &mut Coordinate;
-    fn get_coordinate(&self) -> Coordinate;    
+    fn get_coordinate(&self) -> Coordinate;
     fn velocity(&mut self) -> &mut Direction;
     fn get_velocity(&self) -> &Direction;
 }
 pub trait GravitySource {
     fn coordinate(&mut self) -> &mut Coordinate;
-    fn get_coordinate(&self) -> Coordinate;    
+    fn get_coordinate(&self) -> Coordinate;
     fn weight(&mut self) -> i32;
     fn get_weight(&self) -> i32;
 }
@@ -94,15 +122,18 @@ fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
     (((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2)) as f64).sqrt() as i32
 }
 
-fn apply_physics(mut objects: Vec<Box<dyn GravityObject>>, gravitational_constant: i32) -> Vec<Box<dyn GravityObject>> {
+fn apply_physics(
+    mut objects: Vec<Box<dyn GravityObject>>,
+    gravitational_constant: i32,
+) -> Vec<Box<dyn GravityObject>> {
     // Go through each pair of objects, and apply
-    /*      ~~TODO~~ I still go with the assumption that `GravityObject` can be either `GravityReceiver` or `GravitySource`, though obvious next step would be break this assumption, and couple 
+    /*      ~~TODO~~ I still go with the assumption that `GravityObject` can be either `GravityReceiver` or `GravitySource`, though obvious next step would be break this assumption, and couple
     of `todo!()`s left in the trait are precisely for it. Though it would need a separate upgrade/refactoring. */
-    /*          actually (thanks to `rebase`) the only couple of `todo()` left are in `handle_connection`; 
+    /*          actually (thanks to `rebase`) the only couple of `todo()` left are in `handle_connection`;
     and even if being filled here's no type which have both kinds of `GravityObject` `trait` to experience such a luxury */
     let gravity_sources = objects
         .iter()
-        .filter_map(|o| {o.one().map(|o| (o.get_coordinate(), o.get_weight()))})
+        .filter_map(|o| o.one().map(|o| (o.get_coordinate(), o.get_weight())))
         .collect::<Vec<_>>();
 
     objects.iter_mut().for_each(|o| {
@@ -168,16 +199,24 @@ fn handle_connection(
         #[serde(rename = "stroke-width")]
         stroke_width: i32,
     }
-    
+
     let get_circle = |o: &Box<dyn GravityObject>| -> Circle {
         match (o.one(), o.other()) {
-            (Some(o), None) => Circle { 
-                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: o.get_weight(), stroke: "green".to_string(), 
-                fill: "black".to_string(), stroke_width: 3
+            (Some(o), None) => Circle {
+                cx: o.get_coordinate().x,
+                cy: o.get_coordinate().y,
+                r: o.get_weight(),
+                stroke: "green".to_string(),
+                fill: "black".to_string(),
+                stroke_width: 3,
             },
-            (None, Some(o)) => Circle { 
-                cx: o.get_coordinate().x, cy: o.get_coordinate().y, r: 2, stroke: "green".to_string(), 
-                fill: "black".to_string(), stroke_width: 3
+            (None, Some(o)) => Circle {
+                cx: o.get_coordinate().x,
+                cy: o.get_coordinate().y,
+                r: 2,
+                stroke: "green".to_string(),
+                fill: "black".to_string(),
+                stroke_width: 3,
             },
             (Some(_), Some(_)) => todo!(),
             (None, None) => todo!(),
@@ -193,10 +232,14 @@ fn handle_connection(
     stream.flush().unwrap();
     stream.shutdown(std::net::Shutdown::Both).unwrap();
 
-    objects//.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
+    objects //.into_iter().map(|o| o.as_object()).collect::<Vec<Box<dyn Object>>>()
 }
 
-pub fn start_server(uri: &str, mut objects: Vec<Box<dyn GravityObject>>, gravitational_constant: i32) -> ! {
+pub fn start_server(
+    uri: &str,
+    mut objects: Vec<Box<dyn GravityObject>>,
+    gravitational_constant: i32,
+) -> ! {
     let listener = TcpListener::bind(uri).unwrap();
 
     for stream in listener.incoming() {
