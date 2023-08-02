@@ -33,6 +33,7 @@ impl Object for Planet {
     fn weight(&self) -> Option<i32> {
         Some(self.weight)
     }
+    fn weight_mut(&mut self) -> Option<i32> {Some(self.weight)}
     fn velocity_mut(&mut self) -> Option<&mut Direction> {
         None
     }
@@ -60,6 +61,7 @@ impl Object for Asteroid {
     fn weight(&self) -> Option<i32> {
         None
     }
+    fn weight_mut(&mut self) -> Option<i32> {None}
     fn velocity_mut(&mut self) -> Option<&mut Direction> {
         Some(&mut self.velocity)
     }
@@ -74,6 +76,7 @@ pub trait Object {
     fn coordinate_mut(&mut self) -> &mut Coordinate;
     fn coordinate(&self) -> Coordinate;
     fn weight(&self) -> Option<i32>;
+    fn weight_mut(&mut self) -> Option<i32>;
     fn velocity_mut(&mut self) -> Option<&mut Direction>;
 }
 

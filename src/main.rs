@@ -26,14 +26,14 @@ impl Object for Pulsar {
         false
     }
 
-    fn coordinate(&mut self) -> &mut Coordinate {
+    fn coordinate_mut(&mut self) -> &mut Coordinate {
         &mut self.coordinate
     }
-    fn get_coordinate(&self) -> Coordinate {
+    fn coordinate(&self) -> Coordinate {
         self.coordinate
     }
 
-    fn weight(&mut self) -> Option<i32> {
+    fn weight_mut(&mut self) -> Option<i32> {
         match self.weight.state {
             Pulse::Off => {
                 if self.weight.counter >= 2 {
@@ -49,14 +49,14 @@ impl Object for Pulsar {
             }
         }
     }
-    fn get_weight(&self) -> Option<i32> {
+    fn weight(&self) -> Option<i32> {
         match self.weight.state {
             Pulse::Off => Some(0),
             Pulse::On => Some(self.weight.value),
         }
     }
 
-    fn velocity(&mut self) -> Option<&mut Direction> {
+    fn velocity_mut(&mut self) -> Option<&mut Direction> {
         None
     }
 }
