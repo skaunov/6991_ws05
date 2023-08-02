@@ -27,19 +27,16 @@ impl Object for Planet {
     fn is_gravity_receiver(&self) -> bool {
         false
     }
-    fn coordinate(&mut self) -> &mut Coordinate {
+    fn coordinate_mut(&mut self) -> &mut Coordinate {
         &mut self.coordinate
     }
-    fn weight(&mut self) -> Option<i32> {
+    fn weight(&self) -> Option<i32> {
         Some(self.weight)
     }
-    fn get_weight(&self) -> Option<i32> {
-        Some(self.weight)
-    }
-    fn velocity(&mut self) -> Option<&mut Direction> {
+    fn velocity_mut(&mut self) -> Option<&mut Direction> {
         None
     }
-    fn get_coordinate(&self) -> Coordinate {
+    fn coordinate(&self) -> Coordinate {
         self.coordinate
     }
 }
@@ -57,19 +54,16 @@ impl Object for Asteroid {
     fn is_gravity_receiver(&self) -> bool {
         true
     }
-    fn coordinate(&mut self) -> &mut Coordinate {
+    fn coordinate_mut(&mut self) -> &mut Coordinate {
         &mut self.coordinate
     }
-    fn weight(&mut self) -> Option<i32> {
+    fn weight(&self) -> Option<i32> {
         None
     }
-    fn get_weight(&self) -> Option<i32> {
-        None
-    }
-    fn velocity(&mut self) -> Option<&mut Direction> {
+    fn velocity_mut(&mut self) -> Option<&mut Direction> {
         Some(&mut self.velocity)
     }
-    fn get_coordinate(&self) -> Coordinate {
+    fn coordinate(&self) -> Coordinate {
         self.coordinate
     }
 }
@@ -77,11 +71,10 @@ impl Object for Asteroid {
 pub trait Object {
     fn is_gravity_source(&self) -> bool;
     fn is_gravity_receiver(&self) -> bool;
-    fn coordinate(&mut self) -> &mut Coordinate;
-    fn get_coordinate(&self) -> Coordinate;
-    fn weight(&mut self) -> Option<i32>;
-    fn get_weight(&self) -> Option<i32>;
-    fn velocity(&mut self) -> Option<&mut Direction>;
+    fn coordinate_mut(&mut self) -> &mut Coordinate;
+    fn coordinate(&self) -> Coordinate;
+    fn weight(&self) -> Option<i32>;
+    fn velocity_mut(&mut self) -> Option<&mut Direction>;
 }
 
 fn get_distance(x1: i32, y1: i32, x2: i32, y2: i32) -> i32 {
@@ -98,8 +91,8 @@ fn apply_physics(
         .filter_map(|o| {
             return if o.is_gravity_source() {
                 Some((
-                    o.get_coordinate(),
-                    o.get_weight().expect(BREAKING_VALUE_KIND),
+                    o.coordinate().clone(),
+                    o.weight().expect(BREAKING_VALUE_KIND),
                 ))
             } else {
                 None
@@ -131,10 +124,10 @@ fn apply_physics(
                             * gravitational_constant
                             / distance,
                     };
-                    asteroid.velocity().expect(BREAKING_VALUE_KIND).x -= force.x;
-                    asteroid.velocity().expect(BREAKING_VALUE_KIND).y -= force.y;
+                    asteroid.velocity_mut().expect(BREAKING_VALUE_KIND).x -= force.x;
+                    asteroid.velocity_mut().expect(BREAKING_VALUE_KIND).y -= force.y;
 
-                    let vel = asteroid.velocity().expect(BREAKING_VALUE_KIND);
+                    let vel = asteroid.velocity_mut().expect(BREAKING_VALUE_KIND);
                 })
         }
     });
@@ -142,8 +135,8 @@ fn apply_physics(
     // Apply the new velocity to each object.
     objects.iter_mut().for_each(|object| {
         if object.is_gravity_receiver() {
-            object.coordinate().x += object.velocity().expect(BREAKING_VALUE_KIND).x;
-            object.coordinate().y += object.velocity().expect(BREAKING_VALUE_KIND).y;
+            object.coordinate().x += object.velocity_mut().expect(BREAKING_VALUE_KIND).x;
+            object.coordinate().y += object.velocity_mut().expect(BREAKING_VALUE_KIND).y;
         }
     });
 
@@ -172,16 +165,16 @@ fn handle_connection(
     let get_circle = |o: &Box<dyn Object>| -> Circle {
         match (o.is_gravity_source(), o.is_gravity_receiver()) {
             (true, false) => Circle {
-                cx: o.get_coordinate().x,
-                cy: o.get_coordinate().y,
-                r: o.get_weight().expect(BREAKING_VALUE_KIND),
+                cx: o.coordinate().x,
+                cy: o.coordinate().y,
+                r: o.weight().expect(BREAKING_VALUE_KIND),
                 stroke: "green".to_string(),
                 fill: "black".to_string(),
                 stroke_width: 3,
             },
             (false, true) => Circle {
-                cx: o.get_coordinate().x,
-                cy: o.get_coordinate().y,
+                cx: o.coordinate().x,
+                cy: o.coordinate().y,
                 r: 2,
                 stroke: "green".to_string(),
                 fill: "black".to_string(),
