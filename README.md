@@ -2,7 +2,8 @@ This is solution for [workshop]. I feel that I took a slightly different path fr
 
 # solution and exercise text
 
-[Workshop] offers 7 tasks, which are solved in 4 branches. The initial code provided as the workshop starter is in the [first commit](https://github.com/skaunov/6991_ws05/commit/ffb3cdee5b2f00bc1d96f2115346f817c857e991) shared by all of them. This (`master`) branch contains solution to tasks ##1-4, and solutions to tasks #5 to #7 are presented in their own respective branches: 
+[Workshop] offers 7 tasks, which were solved in 4 branches. The initial code provided as the workshop starter is in the [first commit](https://github.com/skaunov/6991_ws05/commit/ffb3cdee5b2f00bc1d96f2115346f817c857e991) shared by all of them. This (master) branch contained solution to tasks ##1-4, at <commit:5d97751aa75df7b06d25df04c42d0a457f529407>. Now the branch represent the final task as I feel (possible wrongly) X) that I've got from the workshop all what it was inteded for. 
+Solutions to tasks #5 to #7 are presented in their own respective branches: 
 5) <https://github.com/skaunov/6991_ws05/tree/test_pulsar>, 
 6) <https://github.com/skaunov/6991_ws05/tree/test_distantoid>, 
 7) <https://github.com/skaunov/6991_ws05/tree/test_combination_task7>.
